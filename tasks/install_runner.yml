@@ -35,16 +35,30 @@
   changed_when: false
   ignore_errors: true
 
-- name: Unarchive runner package
+- name: Create temporary directory for archive
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: runner
+  become: false
+  register: temp_dir
+  when: runner_version not in runner_installed.stdout
+
+- name: Download runner package version - "{{ runner_version }}" (RUN ONCE)
+  ansible.builtin.get_url:
+    url:
+      "https://github.com/{{ runner_download_repository }}/releases/download/v{{ runner_version }}/\
+      actions-runner-linux-{{ github_actions_architecture }}-{{ runner_version }}.tar.gz"
+    dest: "{{ temp_dir.path }}/actions-runner-linux-{{ runner_version }}.tar.gz"
+    force: no
+  become: false
+  when: runner_version not in runner_installed.stdout or reinstall_runner
+
+- name: Unarchive package
   ansible.builtin.unarchive:
-    src: "https://github.com/{{ runner_download_repository }}/releases/download/v{{ runner_version }}/\
-          actions-runner-linux-{{ github_actions_architecture }}-{{ runner_version }}.tar.gz"
+    src: "{{ temp_dir.path }}/actions-runner-linux-{{ runner_version }}.tar.gz"
     dest: "{{ runner_dir }}/"
-    owner: "{{ ansible_facts.getent_passwd[runner_user].1 }}"
-    group: "{{ ansible_facts.getent_passwd[runner_user].2 }}"
-    remote_src: yes
+    owner: "{{ runner_user }}"
     mode: 0755
-  become: true
   when: runner_version not in runner_installed.stdout or reinstall_runner
 
 - name: Configure custom env file if required
