@@ -58,6 +58,7 @@
     src: "{{ temp_dir.path }}/actions-runner-linux-{{ runner_version }}.tar.gz"
     dest: "{{ runner_dir }}/"
     owner: "{{ runner_user }}"
+    remote_src: true
     mode: 0755
   when: runner_version not in runner_installed.stdout or reinstall_runner
 
